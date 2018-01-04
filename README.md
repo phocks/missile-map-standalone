@@ -1,2 +1,9 @@
-# missile-map-standalone
-A version of the world missile map that runs on its own
+# BrisJS Talk
+
+Something something.
+
+ヽ(๏∀๏ )ﾉ
+
+---
+
+by Joshua Byrd aka. [phocks](http://twitter.com/phocks)
