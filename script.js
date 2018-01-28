@@ -24,7 +24,6 @@ import worldMap from "./world-map.js"
 import storyData from "./story-data.js"
 
 const land = topojson.feature(worldMap, worldMap.objects.land)
-console.log(land)
 const globe = { type: "Sphere" }
   
 
@@ -36,15 +35,16 @@ const projection = d3
     globe
   )
 
-// Set initial global scale to handle zoom ins and outs
-let initialGlobeScale = projection.scale();
-
 const context = canvas.node().getContext("2d")
 
 const path = d3
     .geoPath()
     .projection(projection)
     .context(context)
+
+
+
+
 
 // Set the main point
 const initialPoint = getItem("pyongyang").longlat;
@@ -66,7 +66,7 @@ function drawWorld() {
   // Draw the oceans and the seas
   context.beginPath();
   context.lineWidth = 1.2;
-  context.strokeStyle = "darkblue";
+  context.strokeStyle = "#B6CED6";
   context.fillStyle = "#E4EDF0";
   path(globe);
   context.fill();
@@ -113,15 +113,28 @@ function drawWorld() {
   projection.scale(projection.scale() + 5);
 }
 
-// The story starts here
+// // The story starts here
 let currentStoryPosition = 0;
 let storyPositionMax = storyData.length;
 
+// Set initial global scale to handle zoom ins and outs
+let initialGlobeScale = projection.scale();
+
 
 body.on("keydown", () => {
-  // Advance the story
-  currentStoryPosition++;
-  if (currentStoryPosition >= storyPositionMax) currentStoryPosition = 0;
+  // Advance the story on keydown event
+  console.log("Keycode: " + d3.event.keyCode)
+  
+  // If back left arrow key go back one
+  if (d3.event.keyCode === 37) {
+    currentStoryPosition--;
+    if (currentStoryPosition < 0) currentStoryPosition = storyPositionMax-1;
+  } else {
+    // Otherwise proceed
+    currentStoryPosition++;
+    if (currentStoryPosition >= storyPositionMax) currentStoryPosition = 0;
+  }
+  
   
   // Set ranges
   previousRangeInKms = currentRangeInKms;
@@ -132,16 +145,14 @@ body.on("keydown", () => {
   let currentRotation = storyData[currentStoryPosition].longlat
   
   // Set scales
-  let previousScale = projection.scale()
+  let previousScale = projection.scale();
   let currentScale = initialGlobeScale * (storyData[currentStoryPosition].scale / 100);
   
-  console.log(currentStoryPosition)
-  console.log(storyData[currentStoryPosition].name)
-  console.log(currentRangeInKms);
-  console.log(previousRotation)
-  console.log(currentRotation)
-  console.log(previousScale)
-  console.log(currentScale)
+  console.log("Story position: " + currentStoryPosition);
+  console.log(storyData[currentStoryPosition].name);
+  console.log("Missile range: " + currentRangeInKms);
+  console.log("Earth's rotation: " + currentRotation);
+  console.log("Zoom: " + currentScale);
   
   let dummyTransition = {}
   
@@ -150,31 +161,31 @@ body.on("keydown", () => {
     .delay(0)
     .duration(1000)
     .tween("rotate", function() {
-      var p = currentRotation;
-      if (p) {
-        let rotationInterpolate = d3.interpolate(previousRotation, [
-          -p[0],
-          -p[1],
-          0
-        ]);
-        let radiusInterpolate = d3.interpolate(
-          kmsToRadius(previousRangeInKms),
-          kmsToRadius(currentRangeInKms)
-        );
-        let scaleInterpolate = d3.interpolate(
-              previousScale,
-              currentScale
-        );
+      let rotationInterpolate = d3.interpolate(previousRotation, [
+        -currentRotation[0],
+        -currentRotation[1],
+        0
+      ]);
+    
+      let radiusInterpolate = d3.interpolate(
+        kmsToRadius(previousRangeInKms),
+        kmsToRadius(currentRangeInKms)
+      );
+    
+      let scaleInterpolate = d3.interpolate(
+            previousScale,
+            currentScale
+      );
 
-        // Return the tween function
-        return function(time) {
-          projection.rotate(rotationInterpolate(time));
-          rangeCircle.radius(radiusInterpolate(time));
-          projection.scale(scaleInterpolate(time));
-          drawWorld();
-        };
-      }
-  });
+      // Return the tween function
+      return function(time) {
+        projection.rotate(rotationInterpolate(time));
+        rangeCircle.radius(radiusInterpolate(time));
+        projection.scale(scaleInterpolate(time));
+        drawWorld();
+      };
+    }
+  );
 });
 
 
