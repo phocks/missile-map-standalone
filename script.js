@@ -4,7 +4,7 @@ const margin = 100
 const screenWidth = window.innerWidth
 const screenHeight = window.innerHeight
 
-let currentLocationId = "northkorea"
+// let currentLocationId = "northkorea"
 let currentRangeInKms = 1000
 let previousRangeInKms = 0
 
@@ -22,9 +22,11 @@ const canvas = d3.select(".world")
 
 import worldMap from "./world-map.js"
 import storyData from "./story-data.js"
+console.log(worldMap, storyData);
 
 const land = topojson.feature(worldMap, worldMap.objects.land)
 const globe = { type: "Sphere" }
+console.log(land, globe);
   
 
 const projection = d3
@@ -32,7 +34,7 @@ const projection = d3
   .clipAngle(90) // Only display front side of the world
   .fitExtent( // Auto zoom
     [[margin, margin], [screenWidth - margin, screenHeight - margin]],
-    globe
+    land
   )
 
 const context = canvas.node().getContext("2d")
@@ -50,10 +52,20 @@ const path = d3
 const initialPoint = getItem("pyongyang").longlat;
   projection.rotate([-initialPoint[0], -initialPoint[1]]);
 
+// A helper function to index an array of objects
+function getItem(id) {
+  return storyData.find(item => item.id === id);
+}
+
 const rangeCircle = d3
     .geoCircle()
     .center(initialPoint)
     .radius(kmsToRadius(currentRangeInKms));
+
+// Helper to turn kilometres into a D3 radius
+function kmsToRadius(kms) {
+  return kms / 111.319444; // This many kilometres per degree
+}
 
 
 // Draw the inital state of the world
@@ -113,12 +125,12 @@ function drawWorld() {
   projection.scale(projection.scale() + 5);
 }
 
-// // The story starts here
+// The story starts here
 let currentStoryPosition = 0;
 let storyPositionMax = storyData.length;
 
 // Set initial global scale to handle zoom ins and outs
-let initialGlobeScale = projection.scale();
+const initialGlobeScale = projection.scale();
 
 
 body.on("keydown", () => {
@@ -160,7 +172,7 @@ body.on("keydown", () => {
     .transition("transition")
     .delay(0)
     .duration(1000)
-    .tween("rotate", function() {
+    .tween("spinner", function() {
       let rotationInterpolate = d3.interpolate(previousRotation, [
         -currentRotation[0],
         -currentRotation[1],
@@ -188,14 +200,3 @@ body.on("keydown", () => {
   );
 });
 
-
-
-// Helper to turn kilometres into a D3 radius
-function kmsToRadius(kms) {
-  return kms / 111.319444; // This many kilometres per degree
-}
-
-// A helper function to index an array of objects
-function getItem(id) {
-  return storyData.find(item => item.id === id);
-}
