@@ -1,75 +1,70 @@
 /* globals d3 topojson */
 
-const margin = 100
-const screenWidth = window.innerWidth
-const screenHeight = window.innerHeight
-
-// let currentLocationId = "northkorea"
-let currentRangeInKms = 1000
-let previousRangeInKms = 0
+const margin = 100;
+const screenWidth = window.innerWidth;
+const screenHeight = window.innerHeight;
 
 
-const body = d3.select('body')
+const body = d3
+  .select("body")
   .style("background-color", "#f9f9f9")
-  .style('margin', 0)
+  .style("margin", 0);
 
-
-const canvas = d3.select(".world")
+const canvas = d3
+  .select(".world")
   .append("canvas")
   .style("display", "block")
   .attr("width", screenWidth)
-  .attr("height", screenHeight)
+  .attr("height", screenHeight);
 
-import worldMap from "./world-map.js"
-import storyData from "./story-data.js"
+import worldMap from "./world-map.js";
+import storyData from "./story-data.js";
 console.log(worldMap, storyData);
 
-const land = topojson.feature(worldMap, worldMap.objects.land)
-const globe = { type: "Sphere" }
+const land = topojson.feature(worldMap, worldMap.objects.land);
+const globe = { type: "Sphere" };
 console.log(land, globe);
-  
 
 const projection = d3
   .geoOrthographic() // Globe projection
   .clipAngle(90) // Only display front side of the world
-  .fitExtent( // Auto zoom
+  .fitExtent(
+    // Auto zoom
     [[margin, margin], [screenWidth - margin, screenHeight - margin]],
     land
-  )
+  );
 
-const context = canvas.node().getContext("2d")
+const context = canvas.node().getContext("2d");
 
 const path = d3
-    .geoPath()
-    .projection(projection)
-    .context(context)
-
-
-
-
+  .geoPath()
+  .projection(projection)
+  .context(context);
 
 // Set the main point
 const initialPoint = getItem("pyongyang").longlat;
-  projection.rotate([-initialPoint[0], -initialPoint[1]]);
+projection.rotate([-initialPoint[0], -initialPoint[1]]);
 
 // A helper function to index an array of objects
 function getItem(id) {
   return storyData.find(item => item.id === id);
 }
 
+let currentRangeInKms = 1000;
+let previousRangeInKms = 0;
+
 const rangeCircle = d3
-    .geoCircle()
-    .center(initialPoint)
-    .radius(kmsToRadius(currentRangeInKms));
+  .geoCircle()
+  .center(initialPoint)
+  .radius(kmsToRadius(currentRangeInKms));
 
 // Helper to turn kilometres into a D3 radius
 function kmsToRadius(kms) {
   return kms / 111.319444; // This many kilometres per degree
 }
 
-
 // Draw the inital state of the world
-drawWorld()
+drawWorld();
 
 function drawWorld() {
   // Clear the canvas ready for redraw
@@ -92,7 +87,7 @@ function drawWorld() {
   path(land);
   context.fill();
   context.stroke();
-  
+
   // Draw circle launch radius
   context.beginPath();
   context.strokeStyle = "#FF6100";
@@ -103,7 +98,6 @@ function drawWorld() {
   context.fill();
   context.globalAlpha = 1;
   context.stroke();
-
 
   // Draw a circle outline around the world
   // First clear any radius around the outside
@@ -132,43 +126,43 @@ let storyPositionMax = storyData.length;
 // Set initial global scale to handle zoom ins and outs
 const initialGlobeScale = projection.scale();
 
-
 body.on("keydown", () => {
   // Advance the story on keydown event
-  console.log("Keycode: " + d3.event.keyCode)
-  
+  console.log("Keycode: " + d3.event.keyCode);
+
   // If back left arrow key go back one
   if (d3.event.keyCode === 37) {
     currentStoryPosition--;
-    if (currentStoryPosition < 0) currentStoryPosition = storyPositionMax-1;
+    if (currentStoryPosition < 0) currentStoryPosition = storyPositionMax - 1;
   } else {
     // Otherwise proceed
     currentStoryPosition++;
     if (currentStoryPosition >= storyPositionMax) currentStoryPosition = 0;
   }
-  
-  
+
   // Set ranges
   previousRangeInKms = currentRangeInKms;
-  currentRangeInKms = storyData[currentStoryPosition].range
-  
+  currentRangeInKms = storyData[currentStoryPosition].range;
+
   // Set rotations
   let previousRotation = projection.rotate();
-  let currentRotation = storyData[currentStoryPosition].longlat
-  
+  let currentRotation = storyData[currentStoryPosition].longlat;
+
   // Set scales
   let previousScale = projection.scale();
-  let currentScale = initialGlobeScale * (storyData[currentStoryPosition].scale / 100);
-  
+  let currentScale =
+    initialGlobeScale * (storyData[currentStoryPosition].scale / 100);
+
   console.log("Story position: " + currentStoryPosition);
   console.log(storyData[currentStoryPosition].name);
   console.log("Missile range: " + currentRangeInKms);
   console.log("Earth's rotation: " + currentRotation);
   console.log("Zoom: " + currentScale);
-  
-  let dummyTransition = {}
-  
-  d3.select(dummyTransition)
+
+  let dummyTransition = {};
+
+  d3
+    .select(dummyTransition)
     .transition("transition")
     .delay(0)
     .duration(1000)
@@ -178,16 +172,13 @@ body.on("keydown", () => {
         -currentRotation[1],
         0
       ]);
-    
+
       let radiusInterpolate = d3.interpolate(
         kmsToRadius(previousRangeInKms),
         kmsToRadius(currentRangeInKms)
       );
-    
-      let scaleInterpolate = d3.interpolate(
-            previousScale,
-            currentScale
-      );
+
+      let scaleInterpolate = d3.interpolate(previousScale, currentScale);
 
       // Return the tween function
       return function(time) {
@@ -196,7 +187,5 @@ body.on("keydown", () => {
         projection.scale(scaleInterpolate(time));
         drawWorld();
       };
-    }
-  );
+    });
 });
-
