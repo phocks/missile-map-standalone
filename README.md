@@ -1,6 +1,6 @@
 # Missile Range Test
 
-Using JavaScript to do some stuff
+How I learned to stop worrying and love charting North Korean missile ranges in D3.js
 
 ヽ(๏∀๏ )ﾉ
 
